@@ -22,3 +22,4 @@ clean:
 all: 
 
 .PHONY: clean
+.DEFAULT_GOAL := test

@@ -1,5 +1,4 @@
 import Fifo::*;
-
 import DataType::*;
 
 interface PE_Control;
@@ -37,7 +36,7 @@ module mkPE(PE);
     rule doClear if (state == Clear);
         // Reset the weight for future computation
         weight <= tagged Invalid;
-endrule
+    endrule
 
     rule doLoadWeight if (state == LoadWeight);
         // Weight flows from top to bottom.
@@ -56,7 +55,7 @@ endrule
 
     rule doCompute if (state == Compute);
         //
-        //                     psum
+        //                     psum (if empty, then 0)
         //                      |
         //                      v
         //    activation  --->  PE  ->  (activation pass through)
@@ -66,13 +65,17 @@ endrule
         //
 
         // Get the values
-        let psum = topFifo.first();
-        topFifo.deq();
+        Data psum = 0;
+        if (topFifo.notEmpty()) begin
+            psum = topFifo.first();
+            topFifo.deq();
+        end
+        
         let activation = leftFifo.first();
         leftFifo.deq();
 
         // Compute next psum
-        let nextPsum = (weight * activation) + psum;
+        let nextPsum = (fromMaybe(0, weight) * activation) + psum;
         
         // Send the result
         bottomFifo.enq(nextPsum);
