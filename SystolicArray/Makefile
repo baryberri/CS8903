@@ -8,7 +8,7 @@ test: compile
 	$(bindir)/sim
 
 compile: make_directories
-	bsc -u -sim -aggressive-conditions -no-warn-action-shadowing -bdir $(bdir) -simdir $(simdir) -p +:$(srcdir) $(tbdir)/TestBench.bsv
+	bsc -u -sim -aggressive-conditions -no-warn-action-shadowing -bdir $(bdir) -simdir $(simdir) -p +:$(srcdir):$(srcdir)/lib $(srcdir)/testbench/TestBench.bsv
 	bsc -u -sim -e mkTestBench -o $(bindir)/sim -bdir $(bdir) -simdir $(simdir)
 
 make_directories: clean
