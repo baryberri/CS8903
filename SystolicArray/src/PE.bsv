@@ -7,11 +7,10 @@ interface PE_Control;
 endinterface
 
 interface PE_Data;
-    method ActionValue#(Data) downFifoValue();
+    method ActionValue#(Data) bottomFifoValue();
     method ActionValue#(Data) rightFifoValue();
-    method Action putIntoUpFifo(Data data);
+    method Action putIntoTopFifo(Data data);
     method Action putIntoLeftFifo(Data data);
-
 endinterface
 
 interface PE;
@@ -23,25 +22,35 @@ endinterface
 (* synthesize *)
 module mkPE(PE);
     // Weight Storage
-    Reg#(Data) weight <- mkRegU;
+    Reg#(Maybe#(Data)) weight <- mkReg(tagged Invalid);
 
     // Input and Output Fifos
-    Fifo#(1, Data) upFifo <- mkPipelineFifo;
-    Fifo#(1, Data) downFifo <- mkPipelineFifo;
+    Fifo#(1, Data) topFifo <- mkPipelineFifo;
+    Fifo#(1, Data) bottomFifo <- mkPipelineFifo;
     Fifo#(1, Data) leftFifo <- mkPipelineFifo;
     Fifo#(1, Data) rightFifo <- mkPipelineFifo;
 
     // State
     Reg#(PE_State) state <- mkReg(Idle);
 
-
     // Rules
-    rule doIdle if (state == Idle);
-        $display("Idle");
-    endrule
+    rule doClear if (state == Clear);
+        // Reset the weight for future computation
+        weight <= tagged Invalid;
+endrule
 
     rule doLoadWeight if (state == LoadWeight);
-        $display("LoadWeight");
+        // Weight flows from top to bottom.
+        // - If this PE doesn't contain any weight, then save the input
+        // - If this PE already has weight, then flow it to the bototm
+        let weightValue = topFifo.first();
+        topFifo.deq();
+
+        if (isValid(weight)) begin
+            bottomFifo.enq(weightValue);    
+        end else begin
+            weight <= tagged Valid weightValue;
+        end
     endrule
 
     rule doCompute if (state == Compute);
@@ -57,9 +66,9 @@ module mkPE(PE);
     endinterface;
 
     interface data = interface PE_Data
-        method ActionValue#(Data) downFifoValue();
-            let value = downFifo.first();
-            downFifo.deq();
+        method ActionValue#(Data) bottomFifoValue();
+            let value = bottomFifo.first();
+            bottomFifo.deq();
 
             return value;
         endmethod
@@ -71,8 +80,8 @@ module mkPE(PE);
             return value;
         endmethod
 
-        method Action putIntoUpFifo(Data data);
-            upFifo.enq(data);
+        method Action putIntoTopFifo(Data data);
+            topFifo.enq(data);
         endmethod
 
         method Action putIntoLeftFifo(Data data);
