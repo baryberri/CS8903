@@ -43,6 +43,7 @@ endrule
         // Weight flows from top to bottom.
         // - If this PE doesn't contain any weight, then save the input
         // - If this PE already has weight, then flow it to the bototm
+
         let weightValue = topFifo.first();
         topFifo.deq();
 
@@ -54,9 +55,29 @@ endrule
     endrule
 
     rule doCompute if (state == Compute);
-        $display("Compute");
-    endrule
+        //
+        //                     psum
+        //                      |
+        //                      v
+        //    activation  --->  PE  ->  (activation pass through)
+        //                      |
+        //                      v
+        //                  (next psum)
+        //
 
+        // Get the values
+        let psum = topFifo.first();
+        topFifo.deq();
+        let activation = leftFifo.first();
+        leftFifo.deq();
+
+        // Compute next psum
+        let nextPsum = (weight * activation) + psum;
+        
+        // Send the result
+        bottomFifo.enq(nextPsum);
+        rightFifo.enq(activation);
+    endrule
 
     // Interfaces
     interface control = interface PE_Control
