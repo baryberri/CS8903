@@ -24,9 +24,9 @@ module mkPE(PE);
     Reg#(Maybe#(Data)) weight <- mkReg(tagged Invalid);
 
     // Input and Output Fifos
-    Fifo#(1, Data) topFifo <- mkPipelineFifo;
+    Fifo#(1, Data) topFifo <- mkBypassFifo;
+    Fifo#(1, Data) leftFifo <- mkBypassFifo;
     Fifo#(1, Data) bottomFifo <- mkPipelineFifo;
-    Fifo#(1, Data) leftFifo <- mkPipelineFifo;
     Fifo#(1, Data) rightFifo <- mkPipelineFifo;
 
     // State
@@ -65,11 +65,8 @@ module mkPE(PE);
         //
 
         // Get the values
-        Data psum = 0;
-        if (topFifo.notEmpty()) begin
-            psum = topFifo.first();
-            topFifo.deq();
-        end
+        let psum = topFifo.first();
+        topFifo.deq();
         
         let activation = leftFifo.first();
         leftFifo.deq();
