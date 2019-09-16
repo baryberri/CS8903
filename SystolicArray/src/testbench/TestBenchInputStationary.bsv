@@ -9,7 +9,7 @@ import Configuration::*;
 // Test mapping Size
 typedef 8 FilterSize;  // Each filter's size; if filter is (2x2)x2, then 8
 typedef 4 FiltersCount;  // Number of CNN filters; if there are 4 filters, then 4 (output channel)
-typedef 36 InputLength;  // Number of resulting activations CNN generate; if output is (3x3)x4, then 36
+typedef 36 InputLength;  // Number of resulting activations CNN generate; if output is (3x3)x4, then 9
 
 
 
@@ -52,7 +52,7 @@ module mkTestBenchInputStationary();
         rule countResult;
             let result <- systolicArray.verticalData[i].get();
             resultsCount[i] <= resultsCount[i] + 1;
-            $display("[Result] PE %d, Generates Result %d\n", i, result);
+            // $display("[Result] PE %d, Generates Result %d\n", i, result);
         endrule
     end
 
