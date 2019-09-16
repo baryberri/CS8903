@@ -7,9 +7,9 @@ import Configuration::*;
 
 
 // Test mapping Size
-typedef 4 FilterSize;  // Each filter's size
-typedef 2 FiltersCount;  // Number of CNN filters 
-typedef 5 InputLength;  // Number of resulting activations CNN generate
+typedef 8 FilterSize;  // Each filter's size; if filter is (2x2)x2, then 8
+typedef 4 FiltersCount;  // Number of CNN filters; if there are 4 filters, then 4 (output channel)
+typedef 36 InputLength;  // Number of resulting activations CNN generate; if output is (3x3)x4, then 36
 
 
 
