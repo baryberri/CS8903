@@ -146,4 +146,29 @@ module mkTestBenchInputStationary();
             simulationState <= 6;
         end
     endrule
+
+    rule waitForComputation if (simulationState == 6);
+        if (resultsCount[valueOf(FiltersCount) - 1] % fromInteger(valueOf(InputLength)) == 0) begin
+            simulationState <= 7;
+        end
+    endrule
+
+    rule clearSystolicArray if (simulationState == 7);
+        systolicArray.control.setTo(Clear);
+
+        for (Integer i = 0; i < valueOf(FiltersCount); i = i + 1) begin
+            widthCounter[i] <= 0;
+        end
+
+        for (Integer i = 0; i < valueOf(FilterSize); i = i + 1) begin
+            heightCounter[i] <= 0;
+        end
+        
+        simulationState <= 8;
+    endrule
+
+    rule resetSystolicArray if (simulationState == 8);
+        systolicArray.control.setTo(Idle);
+        simulationState <= 0;
+    endrule
 endmodule
