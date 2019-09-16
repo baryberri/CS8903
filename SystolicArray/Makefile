@@ -5,12 +5,12 @@ simdir = $(buildbase)/simdir
 libpath=+:$(srcdir):$(srcdir)/lib
 srcdir = ./src
 
-test: compile
-	$(bindir)/sim
+test: compile_testbench_input_stationary
+	$(bindir)/sim_input_stationary
 
-compile: make_directories
-	bsc -u -sim -aggressive-conditions -no-warn-action-shadowing -bdir $(bdir) -simdir $(simdir) -p $(libpath) $(srcdir)/testbench/TestBench.bsv
-	bsc -u -sim -e mkTestBench -o $(bindir)/sim -bdir $(bdir) -simdir $(simdir)
+compile_testbench_input_stationary: make_directories
+	bsc -u -sim -aggressive-conditions -no-warn-action-shadowing -bdir $(bdir) -simdir $(simdir) -p $(libpath) $(srcdir)/testbench/TestBenchInputStationary.bsv
+	bsc -u -sim -e mkTestBenchInputStationary -o $(bindir)/sim_input_stationary -bdir $(bdir) -simdir $(simdir)
 
 verilog: make_directories
 	bsc -verilog -g mkSystolicArray -aggressive-conditions -no-warn-action-shadowing -bdir $(bdir) -simdir $(simdir) -p $(libpath) -u $(srcdir)/SystolicArray.bsv
