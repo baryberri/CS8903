@@ -53,7 +53,7 @@ module mkPE(PE);
         end
     endrule
 
-    rule doCompute if (state == Compute);
+    rule doComputeWeightValid if ((state == Compute) && isValid(weight));
         //
         //                     psum (if empty, then 0)
         //                      |
@@ -77,6 +77,24 @@ module mkPE(PE);
         // Send the result
         bottomFifo.enq(nextPsum);
         rightFifo.enq(activation);
+    endrule
+
+    rule doComputeWeightNotValid if ((state == Compute) && !isValid(weight));
+        // Weight is not mapped to this pe.
+        // Just flow inputs to the next pe, if exists.
+        if (topFifo.notEmpty()) begin
+            let topFifoValue = topFifo.first();
+            topFifo.deq();
+
+            bottomFifo.enq(topFifoValue);
+        end
+
+        if (leftFifo.notEmpty()) begin
+            let leftFifoValue = leftFifo.first();
+            leftFifo.deq();
+
+            rightFifo.enq(leftFifoValue);
+        end
     endrule
 
     // Interfaces
