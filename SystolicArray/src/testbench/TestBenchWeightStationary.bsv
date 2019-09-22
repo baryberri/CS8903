@@ -8,9 +8,9 @@ import Configuration::*;
 
 
 // Test mapping Size
-typedef 4 FilterSize;  // Each filter's size; if filter is (2x2)x2, then 8
-typedef 3 FiltersCount;  // Number of CNN filters; if there are 4 filters, then 4 (output channel)
-typedef 7 InputLength;  // Number of resulting activations CNN generate; if output is (3x3)x4, then 9
+typedef 8 FilterSize;  // Each filter's size; if filter is (2x2)x2, then 8
+typedef 4 FiltersCount;  // Number of CNN filters; if there are 4 filters, then 4 (output channel)
+typedef 9 OutputLength;  // Number of resulting activations CNN generate; if output is (3x3)x4, then 9
 
 
 
@@ -102,7 +102,7 @@ module mkTestBenchWeightStationary();
 
     rule sendActivation1 if (simulationState == 4);
         for (Integer i = 0; i < valueOf(FilterSize); i = i + 1) begin
-            if ((fromInteger(i) <= counter) && (heightCounter[i] < fromInteger(valueOf(InputLength)))) begin
+            if ((fromInteger(i) <= counter) && (heightCounter[i] < fromInteger(valueOf(OutputLength)))) begin
                 systolicArray.horizontalData[i].put(1.7);
                 heightCounter[i] <= heightCounter[i] + 1;
             end
@@ -110,14 +110,14 @@ module mkTestBenchWeightStationary();
 
         counter <= counter + 1;
 
-        if (heightCounter[valueOf(FilterSize) - 1] >= fromInteger(valueOf(InputLength))) begin
+        if (heightCounter[valueOf(FilterSize) - 1] >= fromInteger(valueOf(OutputLength))) begin
             simulationState <= 5;
         end
     endrule
 
     rule sendPsum1 if (simulationState == 4);
         for (Integer i = 0; i < valueOf(FiltersCount); i = i + 1) begin
-            if ((fromInteger(i) <= counter2) && (widthCounter[i] < fromInteger(valueOf(InputLength)))) begin
+            if ((fromInteger(i) <= counter2) && (widthCounter[i] < fromInteger(valueOf(OutputLength)))) begin
                 systolicArray.verticalData[i].put(0.0);
                 widthCounter[i] <= widthCounter[i] + 1;
             end
@@ -128,7 +128,7 @@ module mkTestBenchWeightStationary();
 
     rule sendActivation2 if (simulationState == 5);
         for (Integer i = 0; i < valueOf(FilterSize); i = i + 1) begin
-            if ((fromInteger(i) <= counter) && (heightCounter[i] < fromInteger(valueOf(InputLength)))) begin
+            if ((fromInteger(i) <= counter) && (heightCounter[i] < fromInteger(valueOf(OutputLength)))) begin
                 systolicArray.horizontalData[i].put(1.7);
                 heightCounter[i] <= heightCounter[i] + 1;
             end
@@ -139,7 +139,7 @@ module mkTestBenchWeightStationary();
 
     rule sendPsum2 if (simulationState == 5);
         for (Integer i = 0; i < valueOf(FiltersCount); i = i + 1) begin
-            if ((fromInteger(i) <= counter2) && (widthCounter[i] < fromInteger(valueOf(InputLength)))) begin
+            if ((fromInteger(i) <= counter2) && (widthCounter[i] < fromInteger(valueOf(OutputLength)))) begin
                 systolicArray.verticalData[i].put(0.0);
                 widthCounter[i] <= widthCounter[i] + 1;
             end
@@ -147,13 +147,13 @@ module mkTestBenchWeightStationary();
 
         counter2 <= counter2 + 1;
 
-        if (widthCounter[valueOf(FiltersCount) - 1] >= fromInteger(valueOf(InputLength))) begin
+        if (widthCounter[valueOf(FiltersCount) - 1] >= fromInteger(valueOf(OutputLength))) begin
             simulationState <= 6;
         end
     endrule
 
     rule waitForComputation if (simulationState == 6);
-        if (resultsCount[valueOf(FiltersCount) - 1] % fromInteger(valueOf(InputLength)) == 0) begin
+        if (resultsCount[valueOf(FiltersCount) - 1] % fromInteger(valueOf(OutputLength)) == 0) begin
             simulationState <= 7;
         end
     endrule

@@ -11,8 +11,8 @@ $ ./SystolicArray  # Shows help message
 ## Configuration
 You can configure this Systolic Array by editing the `src/Configuration.bsv` file.
 ```c
-// Systolic Array Size; This Means 4x4 Systolic Array.
-typedef 4 SystolicArraySize;
+// Systolic Array Size; This Means 8x8 Systolic Array.
+typedef 8 SystolicArraySize;
 
 // Fixed-Point Numbers Quantization Factors
 typedef 8 IntegerBits;  // 8 bits to represent Integer part
