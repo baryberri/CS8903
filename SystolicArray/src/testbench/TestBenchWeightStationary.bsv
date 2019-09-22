@@ -11,7 +11,7 @@ import Configuration::*;
 typedef 8 FilterSize;  // Each filter's size; if filter is (2x2)x2, then 8
 typedef 4 FiltersCount;  // Number of CNN filters; if there are 4 filters, then 4 (output channel)
 typedef 9 OutputLength;  // Number of resulting activations CNN generate; if output is (3x3)x4, then 9
-
+typedef 10000 FinalCycle;  // Simulation Length
 
 
 // Datatype
@@ -38,7 +38,7 @@ module mkTestBenchWeightStationary();
 
     rule cycleCount;
         cycleReg <= cycleReg + 1;
-        if (cycleReg >= 10000) begin
+        if (cycleReg >= fromInteger(valueOf(FinalCycle))) begin
             $display("\n[Simulation Summary] ================================================\n");
             $display("[Cycle] Simulation terminated at cycle %d\n", cycleReg);
 
