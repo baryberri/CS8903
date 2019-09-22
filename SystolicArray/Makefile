@@ -5,8 +5,16 @@ simdir = $(buildbase)/simdir
 libpath=+:$(srcdir):$(srcdir)/lib
 srcdir = ./src
 
+
 test: compile_testbench_input_stationary
 	$(bindir)/sim_input_stationary
+
+testprint: compile_testbench_input_stationary_print_result
+	$(bindir)/sim_input_stationary_print_result
+
+compile_testbench_input_stationary_print_result: make_directories
+	bsc -u -sim -aggressive-conditions -no-warn-action-shadowing -D PRINT_RESULT -bdir $(bdir) -simdir $(simdir) -p $(libpath) $(srcdir)/testbench/TestBenchInputStationary.bsv
+	bsc -u -sim -e mkTestBenchInputStationary -o $(bindir)/sim_input_stationary_print_result -bdir $(bdir) -simdir $(simdir)
 
 compile_testbench_input_stationary: make_directories
 	bsc -u -sim -aggressive-conditions -no-warn-action-shadowing -bdir $(bdir) -simdir $(simdir) -p $(libpath) $(srcdir)/testbench/TestBenchInputStationary.bsv

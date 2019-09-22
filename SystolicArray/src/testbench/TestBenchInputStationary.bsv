@@ -1,6 +1,7 @@
 import Fifo::*;
 import Connectable::*;
 import Vector::*;
+import FixedPoint::*;
 import SystolicArray::*;
 import DataType::*;
 import Configuration::*;
@@ -14,22 +15,22 @@ typedef 9 InputLength;  // Number of resulting activations CNN generate; if outp
 
 
 // Datatype
-typedef Bit#(32) SimulationInteger;
+typedef Bit#(32) SimulationInt;
 
 (* synthesize *)
 module mkTestBenchInputStationary();
     // Cycle
-    Reg#(SimulationInteger) cycleReg <- mkReg(0);
+    Reg#(SimulationInt) cycleReg <- mkReg(0);
     
     // Benchmarks
-    Vector#(FiltersCount, Reg#(SimulationInteger)) resultsCount <- replicateM(mkReg(0));
+    Vector#(FiltersCount, Reg#(SimulationInt)) resultsCount <- replicateM(mkReg(0));
 
     // Test case generation values
-    Reg#(SimulationInteger) simulationState <- mkReg(0);
-    Reg#(SimulationInteger) counter <- mkReg(0);
-    Reg#(SimulationInteger) counter2 <- mkReg(0);
-    Vector#(FiltersCount, Reg#(SimulationInteger)) widthCounter <- replicateM(mkReg(0));
-    Vector#(FilterSize, Reg#(SimulationInteger)) heightCounter <- replicateM(mkReg(0));
+    Reg#(SimulationInt) simulationState <- mkReg(0);
+    Reg#(SimulationInt) counter <- mkReg(0);
+    Reg#(SimulationInt) counter2 <- mkReg(0);
+    Vector#(FiltersCount, Reg#(SimulationInt)) widthCounter <- replicateM(mkReg(0));
+    Vector#(FilterSize, Reg#(SimulationInt)) heightCounter <- replicateM(mkReg(0));
     
     // Unit Under Test
     let systolicArray <- mkSystolicArray();
@@ -52,7 +53,11 @@ module mkTestBenchInputStationary();
         rule countResult;
             let result <- systolicArray.verticalData[i].get();
             resultsCount[i] <= resultsCount[i] + 1;
-            // $display("[Result] PE %d, Generates Result %d\n", i, result);
+            `ifdef PRINT_RESULT
+            $display("[Result] PE %d, Generates Result: ", i);
+            fxptWrite(5, result);
+            $display("\n");
+            `endif
         endrule
     end
 
@@ -70,7 +75,7 @@ module mkTestBenchInputStationary();
 
     rule sendWeight if (simulationState == 1);
         for (Integer i = 0; i < valueOf(FiltersCount); i = i + 1) begin
-            systolicArray.verticalData[i].put(1);
+            systolicArray.verticalData[i].put(3.3);
         end
 
         counter <= counter + 1;
@@ -98,7 +103,7 @@ module mkTestBenchInputStationary();
     rule sendActivation1 if (simulationState == 4);
         for (Integer i = 0; i < valueOf(FilterSize); i = i + 1) begin
             if ((fromInteger(i) <= counter) && (heightCounter[i] < fromInteger(valueOf(InputLength)))) begin
-                systolicArray.horizontalData[i].put(1);
+                systolicArray.horizontalData[i].put(1.7);
                 heightCounter[i] <= heightCounter[i] + 1;
             end
         end
@@ -113,7 +118,7 @@ module mkTestBenchInputStationary();
     rule sendPsum1 if (simulationState == 4);
         for (Integer i = 0; i < valueOf(FiltersCount); i = i + 1) begin
             if ((fromInteger(i) <= counter2) && (widthCounter[i] < fromInteger(valueOf(InputLength)))) begin
-                systolicArray.verticalData[i].put(0);
+                systolicArray.verticalData[i].put(0.0);
                 widthCounter[i] <= widthCounter[i] + 1;
             end
         end
@@ -124,7 +129,7 @@ module mkTestBenchInputStationary();
     rule sendActivation2 if (simulationState == 5);
         for (Integer i = 0; i < valueOf(FilterSize); i = i + 1) begin
             if ((fromInteger(i) <= counter) && (heightCounter[i] < fromInteger(valueOf(InputLength)))) begin
-                systolicArray.horizontalData[i].put(1);
+                systolicArray.horizontalData[i].put(1.7);
                 heightCounter[i] <= heightCounter[i] + 1;
             end
         end
@@ -135,7 +140,7 @@ module mkTestBenchInputStationary();
     rule sendPsum2 if (simulationState == 5);
         for (Integer i = 0; i < valueOf(FiltersCount); i = i + 1) begin
             if ((fromInteger(i) <= counter2) && (widthCounter[i] < fromInteger(valueOf(InputLength)))) begin
-                systolicArray.verticalData[i].put(0);
+                systolicArray.verticalData[i].put(0.0);
                 widthCounter[i] <= widthCounter[i] + 1;
             end
         end
