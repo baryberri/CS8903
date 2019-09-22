@@ -1,0 +1,59 @@
+#!/bin/bash
+
+SRCDIR="./src"
+BUILDBASE="./build"
+BINDIR="$BUILDBASE/bin"
+BDIR="$BUILDBASE/bdir"
+SIMDIR="$BUILDBASE/simdir"
+LIBPATH="+:$SRCDIR:$SRCDIR/lib"
+
+function clean {
+    rm -rf $BUILDBASE
+}
+
+function make_directories {
+    mkdir -p $BDIR
+	mkdir -p $BINDIR
+	mkdir -p $SIMDIR
+}
+
+function compile_weight_stationary {
+    make_directories;
+    case "$1" in
+        -D)
+            bsc -u -sim -aggressive-conditions -no-warn-action-shadowing -D $2 -bdir $BDIR -simdir $SIMDIR -p $LIBPATH $SRCDIR/testbench/TestBenchWeightStationary.bsv;
+            bsc -u -sim -e mkTestBenchWeightStationary -o $BINDIR/sim_weight_stationary -bdir $BDIR -simdir $SIMDIR;;
+        *)
+            bsc -u -sim -aggressive-conditions -no-warn-action-shadowing -bdir $BDIR -simdir $SIMDIR -p $LIBPATH $SRCDIR/testbench/TestBenchWeightStationary.bsv;
+            bsc -u -sim -e mkTestBenchWeightStationary -o $BINDIR/sim_weight_stationary -bdir $BDIR -simdir $SIMDIR;;
+    esac
+}
+
+function compile_verilog {
+    make_directories
+    bsc -verilog -g mkSystolicArray -aggressive-conditions -no-warn-action-shadowing -bdir $BDIR -simdir $SIMDIR -p $LIBPATH -u $SRCDIR/SystolicArray.bsv
+	mkdir -p $BUILDBASE/verilog
+    mv $SRCDIR/*.v $BUILDBASE/verilog
+}
+
+
+case "$1" in
+    --weight-stationary|-w)
+        compile_weight_stationary;
+        $BINDIR/sim_weight_stationary;;
+    --weight-stationary-with-result)
+        compile_weight_stationary -D PRINT_RESULT;
+        $BINDIR/sim_weight_stationary;;
+    --verilog|-v)
+        compile_verilog;;
+    --clean)
+        clean;;
+    --help|-h|*)
+        echo "Usage: $0 (option)"
+        echo "List of Options:"
+        echo "--weight-stationary (-w): Simulate Weight-Stationary Systolic Array"
+        echo "--weight-stationary-with-result: Simulate Weight-Stationary Systolic Array, with printing activations"
+        echo "--verilog (-v): Compile Systolic Array in Verilog (Results are tored at $BUILDBASE/verilog)"
+        echo "--clean: Cleanup directories"
+        echo "--help (-h): Show this message"
+esac
