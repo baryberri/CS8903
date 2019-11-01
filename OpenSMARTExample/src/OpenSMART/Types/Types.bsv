@@ -10,7 +10,7 @@ typedef 1       NumFlitsPerControlMessage;
 
 typedef 6       UserHPCMax;
 
-typedef 2       MeshWidth;
+typedef 4       MeshWidth;
 typedef 3       MeshHeight;
 typedef 2       NumUserVCs;
 
