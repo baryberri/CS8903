@@ -1,0 +1,48 @@
+#!/bin/bash
+
+SRC_DIR="./src"
+BUILD_BASE="./build"
+BIN_DIR="$BUILD_BASE/bin"
+B_DIR="$BUILD_BASE/bdir"
+SIM_DIR="$BUILD_BASE/simdir"
+LIB_PATH="+:$SRC_DIR:$SRC_DIR/lib:$SRC_DIR/types"
+
+function clean {
+    rm -rf $BUILD_BASE
+}
+
+function make_directories {
+    mkdir -p $B_DIR
+	mkdir -p $BIN_DIR
+	mkdir -p $SIM_DIR
+}
+
+function run_testbench {
+    make_directories
+    bsc -u -sim -aggressive-conditions -no-warn-action-shadowing -bdir $B_DIR -simdir $SIM_DIR -p $LIB_PATH $SRC_DIR/testbench/$1Test.bsv
+    bsc -u -sim -e mk$1Test -o $BIN_DIR/sim_$1_test -bdir $B_DIR -simdir $SIM_DIR
+    $BIN_DIR/sim_$1_test
+}
+
+# function compile_verilog {
+#     make_directories
+#     bsc -verilog -g mk$1 -aggressive-conditions -no-warn-action-shadowing -bdir $B_DIR -simdir $SIM_DIR -p $LIB_PATH -u $SRC_DIR/$1.bsv
+# 	mkdir -p $BUILD_BASE/verilog
+#     mv $SRC_DIR/*.v $BUILD_BASE/verilog
+# }
+
+case "$1" in
+    --test|-t)
+        run_testbench $2;;
+    --verilog|-v)
+        compile_verilog $2;;
+    --clean|-c)
+        clean;;
+    --help|-h|*)
+        echo -e "Usage: $0 [option]"
+        echo -e "List of Options:"
+        echo -e "\t--help(-h): Shows this message."
+        echo -e "\t--clean(-c): Removes ./build/ directory."
+        echo -e "\t--test(-t) [Module]: Run simulation for module mk[Module]Test defined in testbench/[Module]Test.bsv";;
+        # echo -e "\t--verilog(-v) [Module]: Compile mk[Module] defined in ./src/[Module].bsv into Verilog, results are saved to ./build/verilog/"
+esac
