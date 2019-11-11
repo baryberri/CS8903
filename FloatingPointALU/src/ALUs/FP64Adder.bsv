@@ -1,16 +1,16 @@
 import Fifo::*;
 
-import FPSmall::*;
+import FP64::*;
 
 (* synthesize *)
-module mkLI_FPSmallAdder(LI_FPSmallALU);
+module mkLI_FP64Adder(LI_FP64ALU);
     /*** Latency Insensitive Implementation ***/
 
 
     /*** Fifos ***/
-    Fifo#(1, FPSmall) argA <- mkBypassFifo();
-    Fifo#(1, FPSmall) argB <- mkBypassFifo();
-    Fifo#(1, FPSmall) result <- mkBypassFifo();
+    Fifo#(1, FP64) argA <- mkBypassFifo();
+    Fifo#(1, FP64) argB <- mkBypassFifo();
+    Fifo#(1, FP64) result <- mkBypassFifo();
 
 
     /*** Internal States ***/
@@ -19,9 +19,9 @@ module mkLI_FPSmallAdder(LI_FPSmallALU);
     Reg#(Bool) isShifting <- mkReg(False);
 
     // These registers save temporary values when shifting.
-    Reg#(FPSmallSign) resultSignReg <- mkRegU();
-    Reg#(FPSmallExponent) resultExponentReg <- mkRegU();
-    Reg#(FPSmallMantissaAdded) resultMantissaAddedReg <- mkRegU();
+    Reg#(FP64Sign) resultSignReg <- mkRegU();
+    Reg#(FP64Exponent) resultExponentReg <- mkRegU();
+    Reg#(FP64MantissaAdded) resultMantissaAddedReg <- mkRegU();
 
 
     /*** Rules ***/
@@ -36,26 +36,26 @@ module mkLI_FPSmallAdder(LI_FPSmallALU);
         let b = argB.first();
         argB.deq();
 
-        FPSmallSign aSign = a[6];
-        FPSmallSign bSign = b[6];
+        FP64Sign aSign = a[63];
+        FP64Sign bSign = b[63];
 
-        FPSmallExponent aExponent = a[5:3];
-        FPSmallExponent bExponent = b[5:3];
+        FP64Exponent aExponent = a[62:52];
+        FP64Exponent bExponent = b[62:52];
 
-        FPSmallMantissaAdded aMantissa = ?;
-        FPSmallMantissaAdded bMantissa = ?;
+        FP64MantissaAdded aMantissa = ?;
+        FP64MantissaAdded bMantissa = ?;
 
         if (aExponent != 0) begin
-            aMantissa = {2'b01, a[2:0]};
+            aMantissa = {2'b01, a[51:0]};
         end else begin
-            aMantissa = {2'b00, a[2:0]};
+            aMantissa = {2'b00, a[51:0]};
             aExponent = 1;
         end
 
         if (bExponent != 0) begin
-            bMantissa = {2'b01, b[2:0]};
+            bMantissa = {2'b01, b[51:0]};
         end else begin
-            bMantissa = {2'b00, b[2:0]};
+            bMantissa = {2'b00, b[51:0]};
             bExponent = 1;
         end
 
@@ -64,9 +64,9 @@ module mkLI_FPSmallAdder(LI_FPSmallALU);
 
 
         // Now compute these values.
-        FPSmallSign resultSign = ?;
-        FPSmallExponent resultExponent = ?;
-        FPSmallMantissaAdded resultMantissaAdded = ?;
+        FP64Sign resultSign = ?;
+        FP64Exponent resultExponent = ?;
+        FP64MantissaAdded resultMantissaAdded = ?;
 
 
         // 1. resultExponent: Set to larger exponent.
@@ -110,7 +110,7 @@ module mkLI_FPSmallAdder(LI_FPSmallALU);
 
 
         // Decode the result: Computing resultMantissa from resultMantissaAdded is required.
-        FPSmallMantissa resultMantissa = ?;
+        FP64Mantissa resultMantissa = ?;
 
         // At this point, resultMantissaAdded would be one of the following 4 cases:
         //   (1) 1x.yyy => resultExponent should be incremented by 1, resultMantissa is xyy
@@ -120,13 +120,13 @@ module mkLI_FPSmallAdder(LI_FPSmallALU);
         //          Shift the value to the left until it becomes 01.xxx form.
         //          Then the resultMantissa could be set to xxx.
         //          One left shifting requires exponent decrement by 1.
-        if (resultMantissaAdded[4] == 1'b1) begin
+        if (resultMantissaAdded[53] == 1'b1) begin
             resultExponent = resultExponent + 1;
-            resultMantissa = resultMantissaAdded[3:1];
+            resultMantissa = resultMantissaAdded[52:1];
 
             result.enq({resultSign, resultExponent, resultMantissa});
-        end else if (resultMantissaAdded[3] == 1'b1) begin
-            resultMantissa = resultMantissaAdded[2:0];
+        end else if (resultMantissaAdded[52] == 1'b1) begin
+            resultMantissa = resultMantissaAdded[51:0];
 
             result.enq({resultSign, resultExponent, resultMantissa});
         end else if (resultMantissaAdded == 0) begin
@@ -148,8 +148,8 @@ module mkLI_FPSmallAdder(LI_FPSmallALU);
         // Shift resultMantissaAddedReg to the left until it reaches 01.xxx form.
         // Shifting left by 1 requires resultExponentReg decremented by 1.
         //   => Terminate shifting when form 01.xxx reached.
-        if (resultMantissaAddedReg[3] == 1'b1) begin
-            FPSmallMantissa resultMantissa = resultMantissaAddedReg[2:0];
+        if (resultMantissaAddedReg[52] == 1'b1) begin
+            FP64Mantissa resultMantissa = resultMantissaAddedReg[51:0];
             result.enq({resultSignReg, resultExponentReg, resultMantissa});
 
             isShifting <= False;
@@ -161,15 +161,15 @@ module mkLI_FPSmallAdder(LI_FPSmallALU);
 
 
     /*** Interfaces ***/
-    method Action putArgA(FPSmall argA_);
+    method Action putArgA(FP64 argA_);
         argA.enq(argA_);
     endmethod
 
-    method Action putArgB(FPSmall argB_);
+    method Action putArgB(FP64 argB_);
         argB.enq(argB_);
     endmethod
 
-    method ActionValue#(FPSmall) getResult();
+    method ActionValue#(FP64) getResult();
         result.deq();
         return result.first();
     endmethod
