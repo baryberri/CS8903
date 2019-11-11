@@ -53,7 +53,7 @@ module mkPE(PE);
         endcase
     endrule
 
-    rule doCompute if (state == Compute);
+    rule doComputeValid if (state == Compute && isValid(loadedData));
         let northValue = north.first();
         let westValue = west.first();
         north.deq();
@@ -64,6 +64,18 @@ module mkPE(PE);
 
         east.enq(westValue);
         south.enq(result);
+    endrule
+
+    rule doComputeInvlid if (state == Compute && !isValid(loadedData));
+        if (north.notEmpty()) begin
+            south.enq(north.first());
+            north.deq();
+        end
+
+        if (west.notEmpty()) begin
+            east.enq(west.first());
+            west.deq();
+        end
     endrule
 
 

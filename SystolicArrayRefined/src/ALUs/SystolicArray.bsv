@@ -62,7 +62,7 @@ module mkSystolicArray(SystolicArray);
             endmethod
 
             method ActionValue#(Data) getSouth();
-                let south = pes[valueOf(SystolicArraySize) - 1][i].data.getSouth();
+                let south <- pes[valueOf(SystolicArraySize) - 1][i].data.getSouth();
                 return south;
             endmethod
         endinterface;

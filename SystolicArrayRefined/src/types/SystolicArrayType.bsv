@@ -1,1 +1,1 @@
-typedef 4 SystolicArraySize;
+typedef 16 SystolicArraySize;

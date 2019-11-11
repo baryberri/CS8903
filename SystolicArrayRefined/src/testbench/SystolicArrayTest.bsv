@@ -7,8 +7,12 @@ import State::*;
 
 
 typedef Bit#(32) SimInt;
-SimInt maxCycle = 10000
+SimInt maxCycle = 10000;
 
+typedef 13 MappingWidth;
+typedef 11 MappingHeight;
+typedef 15 InputLength;
+// (0), (0, 1), (0, 1, 2), .... (0, 1, 2, 3, 4), (0, 1, 2, 3, 4), ...,  (0, 1, 2, 3, 4) => InputLength
 
 (* synthesize *)
 module mkSystolicArrayTest();
@@ -34,7 +38,7 @@ module mkSystolicArrayTest();
     endrule
 
     rule finishSimulation if (cycle >= maxCycle);
-        $dipslay("[Sim] Simulation finished: max cycle %d reached.", maxCycle);
+        $display("[Sim] Simulation finished: max cycle %d reached.", maxCycle);
         $finish(0);
     endrule
 
@@ -43,7 +47,7 @@ module mkSystolicArrayTest();
     for (Integer i = 0; i < valueOf(SystolicArraySize); i = i + 1) begin
         rule displayResult;
             let result <- systolicArray.data[i].getSouth();
-            $display("[Result]: %d", result);
+            $display("[Result]: PE %d -> %d", i, result);
         endrule
 
         rule pullLastActivation;
@@ -54,89 +58,79 @@ module mkSystolicArrayTest();
 
     /*** Tests ***/
     rule startSystolicArray if (state == 0);
-        systolicArray.setStateTo(Load);
+        psumGenerator.control.setMaxLengthTo(fromInteger(valueOf(MappingWidth)));
+        activationGenerator.control.setMaxLengthTo(fromInteger(valueOf(MappingHeight)));
+
+        systolicArray.control.setStateTo(Load);
 
         state <= 1;
     endrule
 
-    rule putWeight if (state == 1 && counter < 2);
-        for (Integer i = 0; i < valueOf(SystolicArraySize); i = i + 1) begin
+    rule putWeight if (state == 1 && counter < fromInteger(valueOf(MappingHeight)));
+        for (Integer i = 0; i < valueOf(MappingWidth); i = i + 1) begin
             systolicArray.data[i].putNorth(1);
         end
 
         counter <= counter + 1;
     endrule
 
-    rule waitForWeightLoading if (state == 1 && (2 <= counter && counter < 4));
+    rule waitForWeightLoading if (state == 1 && (fromInteger(valueOf(MappingHeight)) <= counter && counter < fromInteger(valueOf(MappingHeight) + valueOf(SystolicArraySize))));
         counter <= counter + 1;
     endrule
 
-    rule initGenerators if (state == 1 && (4 <= counter && counter < 5))
-        psumGenerator.next(tagged Valid 0);
-        activationGenerator.next(tagged Valid 1);  // activation
+    rule startComputation if (state == 1 && counter >= fromInteger(valueOf(MappingHeight) + valueOf(SystolicArraySize)));
+        let psum <- psumGenerator.data.get(tagged Valid 0);
+        let activation <- activationGenerator.data.get(tagged Valid 1); // activation 
 
-        counter <= counter + 1;
-    endrule
-
-    rule startComputation if (state == 1 && counter >= 5);
-        let psum <- psumGenerator.get();
-        let activation <- activationGenerator.get(); 
-
-        psumGenerator.next(tagged Valid 0);
-        activationGenerator.next(tagged Valid 1);  // activation
-
-        systolicArray.setStateTo(Compute);
+        systolicArray.control.setStateTo(Compute);
 
         counter <= 0;
         state <= 2;
     endrule
 
-    rule putStartData if (state == 2 && counter < 6);
-        let psum <- psumGenerator.get();
-        let activation <- activationGenerator.get();
+    rule putStartData if (state == 2 && (counter < fromInteger(valueOf(InputLength))));
+        let psum <- psumGenerator.data.get(tagged Valid 0);
+        let activation <- activationGenerator.data.get(tagged Valid 1); // activation
 
         for (Integer i = 0; i < valueOf(SystolicArraySize); i = i + 1) begin
             if (psum[i] matches tagged Valid .psumValue) begin
                 systolicArray.data[i].putNorth(psumValue);
+                $display("[Input] PE %d <- psum %d", i, psumValue);
             end
 
             if (activation[i] matches tagged Valid .activationValue) begin
                 systolicArray.data[i].putWest(activationValue);
+                $display("[Input] PE %d <- activation %d", i, activationValue);
             end
         end
-
-        psumGenerator.next(tagged Valid 0);
-        activationGenerator.next(tagged Valid 1);
-
         counter <= counter + 1;
     endrule
 
-    rule putEndData if (state == 2 && (6 <= counter && counter < 10));
-        let psum <- psumGenerator.get();
-        let activation <- activationGenerator.get();
+    rule putEndData if (state == 2 && (fromInteger(valueOf(InputLength)) <= counter && counter < fromInteger(valueOf(InputLength) * 2)));
+        let psum <- psumGenerator.data.get(tagged Invalid);
+        let activation <- activationGenerator.data.get(tagged Invalid);
 
         for (Integer i = 0; i < valueOf(SystolicArraySize); i = i + 1) begin
             if (psum[i] matches tagged Valid .psumValue) begin
                 systolicArray.data[i].putNorth(psumValue);
+                $display("[Input] PE %d <- psum %d", i, psumValue);
             end
 
             if (activation[i] matches tagged Valid .activationValue) begin
                 systolicArray.data[i].putWest(activationValue);
+                $display("[Input] PE %d <- activation %d", i, activationValue);
             end
         end
-
-        psumGenerator.next(tagged Invalid);
-        activationGenerator.next(tagged Invalid);
         
         counter <= counter + 1;
     endrule
 
-    rule waitForComputation if (state == 2 && (10 <= counter && counter < 30));
+    rule waitForComputation if (state == 2 && (fromInteger(valueOf(InputLength) * 2) <= counter && counter < fromInteger(valueOf(InputLength) * 2 + valueOf(SystolicArraySize))));
         counter <= counter + 1;
     endrule
 
-    rule resetSystolicArray if (state == 2 && counter >= 30);
-        systolicArray.setStateTo(Idle);
+    rule resetSystolicArray if (state == 2 && (counter >= fromInteger(valueOf(InputLength) * 2 + valueOf(SystolicArraySize))));
+        systolicArray.control.setStateTo(Init);
 
         counter <= 0;
         // state <= 0;
