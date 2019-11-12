@@ -4,7 +4,7 @@ import Connectable::*;
 import PE::*;
 
 import SystolicArrayType::*;
-import DataType::*;
+import Types::*;
 import State::*;
 
 

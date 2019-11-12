@@ -1,7 +1,7 @@
 import Vector::*;
 import Fifo::*;
 
-import DataType::*;
+import Types::*;
 import SystolicArrayType::*;
 
 interface ConstantInputGeneratorControl;

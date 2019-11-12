@@ -1,6 +1,6 @@
 import Fifo::*;
 
-import DataType::*;
+import Types::*;
 import State::*;
 
 interface PE_Data;

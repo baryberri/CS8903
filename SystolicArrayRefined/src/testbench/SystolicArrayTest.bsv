@@ -2,7 +2,7 @@ import SystolicArray::*;
 import ConstantInputGenerator::*;
 
 import SystolicArrayType::*;
-import DataType::*;
+import Types::*;
 import State::*;
 
 
