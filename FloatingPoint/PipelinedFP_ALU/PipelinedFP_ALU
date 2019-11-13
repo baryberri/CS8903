@@ -5,7 +5,7 @@ BUILD_BASE="./build"
 BIN_DIR="$BUILD_BASE/bin"
 B_DIR="$BUILD_BASE/bdir"
 SIM_DIR="$BUILD_BASE/simdir"
-LIB_PATH="+:$SRC_DIR:$SRC_DIR/lib:$SRC_DIR/types:$SRC_DIR/ALUs"
+LIB_PATH="+:$SRC_DIR:$SRC_DIR/lib:$SRC_DIR/type:$SRC_DIR/ALU"
 
 function clean {
     rm -rf $BUILD_BASE
