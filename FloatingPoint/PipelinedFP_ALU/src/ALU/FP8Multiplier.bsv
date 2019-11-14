@@ -102,18 +102,17 @@ module mkFP8Multiplier(FP8Multiplier);
             //                   = a.exponent + b.exponent - 2bias
             //    result.exponent = resultExponent - bias
             //                    = a.exponent + b.exponent - bias
-            nextResult.state = Normal;
-
             Bit#(5) bias = (1 << 3) - 1;
             nextResult.exponent = operands.a.exponent + operands.b.exponent;
             if (nextResult.exponent <= bias) begin
-                // result is 0
-                nextResult.exponent = 1;
+                // result is too small: result is 0
+                nextResult.state = Denormal;
                 nextResult.mantissa = 0;
             end else begin
+                nextResult.state = Normal;
                 nextResult.exponent = nextResult.exponent - bias;
+                nextResult.mantissa = operands.a.mantissa * operands.b.mantissa;
             end
-            nextResult.mantissa = operands.a.mantissa * operands.b.mantissa;
         end else begin
             // Special Cases
             if (operands.a.state == NaN || operands.b.state == NaN) begin
@@ -178,20 +177,22 @@ module mkFP8Multiplier(FP8Multiplier);
             // 1 is in [7:6]
             if (operand.mantissa[7] == 1'b1) begin
                 operand.exponent = operand.exponent + 1;
+
                 // Result could be Inf
                 if (operand.exponent >= (1 << 4)) begin
                     operand.exponent = '1;
                     operand.mantissa = 0;
                     result.enq({operand.sign, operand.exponent[3:0], operand.mantissa[2:0]});        
                 end else begin
-                    result.enq({operand.sign, operand.exponent[3:0], operand.mantissa[3:1]});    
+                    // Resut is not Inf
+                    result.enq({operand.sign, operand.exponent[3:0], operand.mantissa[6:4]});    
                 end
             end else begin
-                result.enq({operand.sign, operand.exponent[3:0], operand.mantissa[2:0]});
+                result.enq({operand.sign, operand.exponent[3:0], operand.mantissa[5:3]});
             end
         end else if (operand.state == Denormal) begin
             operand.exponent = 0;
-            result.enq({operand.sign, operand.exponent[3:0], operand.mantissa[2:0]});
+            result.enq({operand.sign, operand.exponent[3:0], operand.mantissa[5:3]});
         end else if (operand.state == Inf) begin
             operand.exponent = '1;
             operand.mantissa = 0;

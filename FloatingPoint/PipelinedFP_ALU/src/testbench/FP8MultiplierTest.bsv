@@ -8,14 +8,15 @@ SimInt maxCycle = 10000;
 
 
 // Test cases
-// Case 1: (positive) + (positive), same exponent, different mantissa
-// Case 2: (negative) + (negative), same exponent, different mantissa
-// Case 3: (positive) + (positive), different exponent, different mantissa
-// Case 4: (negative) + (negative), different exponent, different mantissa
-// Case 5: (positive) + (negative), positive is larger
-// Case 6: (positive) + (negative), negative is larger
-// Case 7: (positive) + (positive), both are denormal number
-// Case 8: (positive) + (negative), result is denormal number
+
+// Case 1: (positive) * (positive) = (positive)
+// Case 2: (positive) * (negative) = (negative)
+// Case 3: (negative) * (negative) = (positive)
+// Case 4: (denormal) * (normal)
+// Case 5: (+large) * (+large) = (+Inf)
+// Case 6: (+large) * (-large) = (-Inf)
+// Case 7: (+small) * (+small) = (+0)
+// Case 8: (+small) * (-small) = (-0)
 // Case 9: (+0) * (-0) = (-0)
 // Case 10: (-0) * (-0) = (+0)
 // Case 11: (negative) * (+0) = (-0)
@@ -34,7 +35,7 @@ module mkFP8MultiplierTest();
 
     /*** States ***/
     Reg#(SimInt) cycle <- mkReg(0);
-    Reg#(SimInt) testCase <- mkReg(9);
+    Reg#(SimInt) testCase <- mkReg(1);
     Reg#(Bool) isPut <- mkReg(True);
 
     
@@ -52,14 +53,14 @@ module mkFP8MultiplierTest();
     /*** Test Cases ***/
     // Case 1
     rule putCase1 if (testCase == 1 && isPut);
-        fp8Multiplier.putArgA(8'b0_1010_010);
-        fp8Multiplier.putArgB(8'b0_1010_101);
+        fp8Multiplier.putArgA(8'b0_0111_000);
+        fp8Multiplier.putArgB(8'b0_0111_101);
         isPut <= False;
     endrule
 
     rule getCase1 if (testCase == 1 && !isPut);
         let result <- fp8Multiplier.getResult();
-        FP8 correctResult = 8'b0_1011_011;
+        FP8 correctResult = 8'b0_0111_101;
 
         if (result == correctResult) begin
             $display("[Test] Pass: Case 1");
@@ -75,14 +76,14 @@ module mkFP8MultiplierTest();
 
     // Case 2
     rule putCase2 if (testCase == 2 && isPut);
-        fp8Multiplier.putArgA(8'b1_0111_110);
-        fp8Multiplier.putArgB(8'b1_0111_111);
+        fp8Multiplier.putArgA(8'b0_1001_110);
+        fp8Multiplier.putArgB(8'b1_1000_011);
         isPut <= False;
     endrule
 
     rule getCase2 if (testCase == 2 && !isPut);
         let result <- fp8Multiplier.getResult();
-        FP8 correctResult = 8'b1_1000_110;
+        FP8 correctResult = 8'b1_1011_001;
 
         if (result == correctResult) begin
             $display("[Test] Pass: Case 2");
@@ -98,14 +99,14 @@ module mkFP8MultiplierTest();
 
     // Case 3
     rule putCase3 if (testCase == 3 && isPut);
-        fp8Multiplier.putArgA(8'b0_0100_001);
-        fp8Multiplier.putArgB(8'b0_0010_110);
+        fp8Multiplier.putArgA(8'b1_1100_110);
+        fp8Multiplier.putArgB(8'b1_0111_000);
         isPut <= False;
     endrule
 
     rule getCase3 if (testCase == 3 && !isPut);
         let result <- fp8Multiplier.getResult();
-        FP8 correctResult = 8'b0_0100_100;
+        FP8 correctResult = 8'b0_1100_110;
 
         if (result == correctResult) begin
             $display("[Test] Pass: Case 3");
@@ -121,14 +122,14 @@ module mkFP8MultiplierTest();
 
     // Case 4
     rule putCase4 if (testCase == 4 && isPut);
-        fp8Multiplier.putArgA(8'b1_0110_110);
-        fp8Multiplier.putArgB(8'b1_1001_001);
+        fp8Multiplier.putArgA(8'b0_0000_110);
+        fp8Multiplier.putArgB(8'b0_1100_101);
         isPut <= False;
     endrule
 
     rule getCase4 if (testCase == 4 && !isPut);
         let result <- fp8Multiplier.getResult();
-        FP8 correctResult = 8'b1_1001_010;
+        FP8 correctResult = 8'b0_0110_001;
 
         if (result == correctResult) begin
             $display("[Test] Pass: Case 4");
@@ -144,14 +145,14 @@ module mkFP8MultiplierTest();
 
     // Case 5
     rule putCase5 if (testCase == 5 && isPut);
-        fp8Multiplier.putArgA(8'b0_1100_110);
-        fp8Multiplier.putArgB(8'b1_1011_101);
+        fp8Multiplier.putArgA(8'b0_1110_110);
+        fp8Multiplier.putArgB(8'b0_1011_101);
         isPut <= False;
     endrule
 
     rule getCase5 if (testCase == 5 && !isPut);
         let result <- fp8Multiplier.getResult();
-        FP8 correctResult = 8'b0_1100_000;
+        FP8 correctResult = 8'b0_1111_000;
 
         if (result == correctResult) begin
             $display("[Test] Pass: Case 5");
@@ -167,14 +168,14 @@ module mkFP8MultiplierTest();
 
     // Case 6
     rule putCase6 if (testCase == 6 && isPut);
-        fp8Multiplier.putArgA(8'b1_1010_100);
-        fp8Multiplier.putArgB(8'b0_1000_111);
+        fp8Multiplier.putArgA(8'b1_1110_101);
+        fp8Multiplier.putArgB(8'b0_1011_111);
         isPut <= False;
     endrule
 
     rule getCase6 if (testCase == 6 && !isPut);
         let result <- fp8Multiplier.getResult();
-        FP8 correctResult = 8'b1_1010_001;
+        FP8 correctResult = 8'b1_1111_000;
 
         if (result == correctResult) begin
             $display("[Test] Pass: Case 6");
@@ -190,14 +191,14 @@ module mkFP8MultiplierTest();
 
     // Case 7
     rule putCase7 if (testCase == 7 && isPut);
-        fp8Multiplier.putArgA(8'b0_0000_100);
-        fp8Multiplier.putArgB(8'b0_0000_111);
+        fp8Multiplier.putArgA(8'b0_0011_100);
+        fp8Multiplier.putArgB(8'b0_0001_111);
         isPut <= False;
     endrule
 
     rule getCase7 if (testCase == 7 && !isPut);
         let result <- fp8Multiplier.getResult();
-        FP8 correctResult = 8'b0_0001_011;
+        FP8 correctResult = 8'b0_0000_000;
 
         if (result == correctResult) begin
             $display("[Test] Pass: Case 7");
@@ -213,14 +214,14 @@ module mkFP8MultiplierTest();
 
     // Case 8
     rule putCase8 if (testCase == 8 && isPut);
-        fp8Multiplier.putArgA(8'b0_0011_001);
-        fp8Multiplier.putArgB(8'b1_0011_000);
+        fp8Multiplier.putArgA(8'b0_0010_001);
+        fp8Multiplier.putArgB(8'b1_0011_001);
         isPut <= False;
     endrule
 
     rule getCase8 if (testCase == 8 && !isPut);
         let result <- fp8Multiplier.getResult();
-        FP8 correctResult = 8'b0_0000_100;
+        FP8 correctResult = 8'b1_0000_000;
 
         if (result == correctResult) begin
             $display("[Test] Pass: Case 8");
