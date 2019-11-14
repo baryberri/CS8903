@@ -70,7 +70,6 @@ module mkFP8Adder(FP8Adder);
             end else begin
                 operands.b.state = NaN;
             end
-            operands.b.mantissa = {2'b00, b[2:0]};
         end else begin
             operands.b.state = Normal;
             operands.b.mantissa = {2'b01, b[2:0]};
