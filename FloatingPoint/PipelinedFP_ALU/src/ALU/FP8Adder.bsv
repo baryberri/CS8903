@@ -14,7 +14,6 @@ module mkFP8Adder(FP8Adder);
     /*** Input and Output Fifos ***/
     Fifo#(1, FP8) argA <- mkBypassFifo();
     Fifo#(1, FP8) argB <- mkBypassFifo();
-
     Fifo#(1, FP8) result <- mkPipelineFifo();
 
     
@@ -45,7 +44,8 @@ module mkFP8Adder(FP8Adder);
 
         if (operands.a.exponent == 0) begin
             // Denormal value
-            operands.a.state = Normal;  // But we set this to Normal, because we manually set the exponent and mantissa correctly.
+            //   - Regard this value as Normal value, by setting mantissa to 0.xxx form (rather than 1.xxx) and exponent to 1.
+            operands.a.state = Normal;
             operands.a.exponent = 1;
             operands.a.mantissa = {2'b00, a[2:0]};
         end else if (operands.a.exponent == '1) begin
@@ -75,7 +75,7 @@ module mkFP8Adder(FP8Adder);
             operands.b.mantissa = {2'b01, b[2:0]};
         end
 
-        // Match exponent
+        // Match exponent: shift smaller exponent value's mantissa
         if (operands.a.state == Normal && operands.b.state == Normal) begin
             if (operands.a.exponent >= operands.b.exponent) begin
                 operands.b.mantissa = operands.b.mantissa >> (operands.a.exponent - operands.b.exponent);
@@ -103,9 +103,11 @@ module mkFP8Adder(FP8Adder);
             nextResult.exponent = operands.a.exponent;
 
             if (operands.a.sign == operands.b.sign) begin
+                // addition
                 nextResult.sign = operands.a.sign;
                 nextResult.mantissa = operands.a.mantissa + operands.b.mantissa;
             end else begin
+                // subtraction
                 if (operands.a.mantissa > operands.b.mantissa) begin
                     nextResult.sign = operands.a.sign;
                     nextResult.mantissa = operands.a.mantissa - operands.b.mantissa;
@@ -113,6 +115,7 @@ module mkFP8Adder(FP8Adder);
                     nextResult.sign = operands.b.sign;
                     nextResult.mantissa = operands.b.mantissa - operands.a.mantissa;
                 end else begin
+                    // subtracting same absolute value: result is 0
                     nextResult.sign = 1'b0;
                     nextResult.mantissa = 0;
                 end
@@ -145,12 +148,14 @@ module mkFP8Adder(FP8Adder);
         added.deq();
 
         if (operand.state == Normal) begin
-            // Make 1 be in [4:2] if it's in [1:0]
-            if (operand.mantissa < (1 << 2)) begin
+            // Shift mantissa by 2 if possible
+            if (operand.mantissa[4:2] == 0) begin
                 if (operand.exponent <= 2) begin
+                    // Denormal Value
                     operand.mantissa = operand.mantissa << (operand.exponent - 1);
                     operand.state = Denormal; 
                 end else begin
+                    // Normal Value
                     operand.mantissa = operand.mantissa << 2;
                     operand.exponent = operand.exponent - 2;
                 end
@@ -165,10 +170,9 @@ module mkFP8Adder(FP8Adder);
         shiftedBy2.deq();
 
         if (operand.state == Normal) begin
-            // Make 1 be in [4:3] if it's in [2]
-            if (operand.mantissa < (1 << 3)) begin
+            if (operand.mantissa[4:3] == 0) begin
                 if (operand.exponent <= 1) begin
-                    // operand.exponent is <= 1 already: no need to shift mantissa anymore
+                    // operand.exponent is <= 1 already: shifting mantissa is not required.
                     operand.state = Denormal;
                 end else begin
                     operand.mantissa = operand.mantissa << 1;
@@ -188,7 +192,15 @@ module mkFP8Adder(FP8Adder);
             // 1 is in [4:3]
             if (operand.mantissa[4] == 1'b1) begin
                 operand.exponent = operand.exponent + 1;
-                result.enq({operand.sign, operand.exponent, operand.mantissa[3:1]});
+
+                // Result could be Inf
+                if (operand.exponent >= '1) begin
+                    operand.mantissa = 0;
+                    result.enq({operand.sign, operand.exponent, operand.mantissa[2:0]});        
+                end else begin
+                    // Resut is not Inf
+                    result.enq({operand.sign, operand.exponent, operand.mantissa[3:1]});
+                end
             end else begin
                 result.enq({operand.sign, operand.exponent, operand.mantissa[2:0]});
             end

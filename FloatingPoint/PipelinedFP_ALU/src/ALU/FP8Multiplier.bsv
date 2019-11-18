@@ -23,6 +23,7 @@ module mkFP8Multiplier(FP8Multiplier);
     Fifo#(1, FP8MultiplierOperand) multiplied <- mkPipelineFifo();
     Fifo#(1, FP8MultiplierOperand) shiftedBy4 <- mkPipelineFifo();
     Fifo#(1, FP8MultiplierOperand) shiftedBy2 <- mkPipelineFifo();
+    Fifo#(1, FP8MultiplierOperand) shiftedBy1 <- mkPipelineFifo();
 
 
     /*** Rules ***/
@@ -42,7 +43,8 @@ module mkFP8Multiplier(FP8Multiplier);
 
         if (a[6:3] == 0) begin
             // Denormal value
-            operands.a.state = Normal;  // But we set this to Normal, because we manually set the exponent and mantissa correctly.
+            //   - Regard this value as Normal value, by setting mantissa to 0.xxx form (rather than 1.xxx) and exponent to 1.
+            operands.a.state = Normal;
             operands.a.exponent = 1;
             operands.a.mantissa = zeroExtend({1'b0, a[2:0]});
         end else if (a[6:3] == '1) begin
@@ -134,8 +136,7 @@ module mkFP8Multiplier(FP8Multiplier);
         multiplied.deq();
 
         if (operand.state == Normal) begin
-            // Make 1 be in [7:4] if it's in [3:0]
-            if (operand.mantissa < (1 << 4)) begin
+            if (operand.mantissa[7:3] == 0) begin
                 if (operand.exponent <= 4) begin
                     operand.mantissa = operand.mantissa << (operand.exponent - 1);
                     operand.state = Denormal;
@@ -154,8 +155,7 @@ module mkFP8Multiplier(FP8Multiplier);
         shiftedBy4.deq();
 
         if (operand.state == Normal) begin
-            // Make 1 be in [7:6] if it's in [5:4]
-            if (operand.mantissa < (1 << 6)) begin
+            if (operand.mantissa[7:5] == 0) begin
                 if (operand.exponent <= 2) begin
                     operand.mantissa = operand.mantissa << (operand.exponent - 1);
                     operand.state = Denormal;
@@ -169,9 +169,28 @@ module mkFP8Multiplier(FP8Multiplier);
         shiftedBy2.enq(operand);
     endrule
 
-    rule putResult;
+    rule shiftBy1;
         let operand = shiftedBy2.first();
         shiftedBy2.deq();
+
+        if (operand.state == Normal) begin
+            if (operand.mantissa[7:6] == 0) begin
+                if (operand.exponent <= 1) begin
+                    // operand.exponent is <= 1 already: shifting mantissa is not required.
+                    operand.state = Denormal;
+                end else begin
+                    operand.mantissa = operand.mantissa << 1;
+                    operand.exponent = operand.exponent - 1;
+                end
+            end
+        end
+
+        shiftedBy1.enq(operand);
+    endrule
+
+    rule putResult;
+        let operand = shiftedBy1.first();
+        shiftedBy1.deq();
 
         if (operand.state == Normal) begin
             // 1 is in [7:6]
