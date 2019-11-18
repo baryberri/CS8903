@@ -24,12 +24,12 @@ function run_testbench {
     $BIN_DIR/sim_$1_test
 }
 
-# function compile_verilog {
-#     make_directories
-#     bsc -verilog -g mk$1 -aggressive-conditions -no-warn-action-shadowing -bdir $B_DIR -simdir $SIM_DIR -p $LIB_PATH -u $SRC_DIR/$1.bsv
-# 	mkdir -p $BUILD_BASE/verilog
-#     mv $SRC_DIR/*.v $BUILD_BASE/verilog
-# }
+function compile_verilog {
+    make_directories
+    bsc -verilog -g mk$1 -aggressive-conditions -no-warn-action-shadowing -bdir $B_DIR -simdir $SIM_DIR -p $LIB_PATH -u $SRC_DIR/ALU/$1.bsv
+	mkdir -p $BUILD_BASE/verilog
+    mv $SRC_DIR/ALU/*.v $BUILD_BASE/verilog
+}
 
 case "$1" in
     --test|-t)
@@ -43,6 +43,6 @@ case "$1" in
         echo -e "List of Options:"
         echo -e "\t--help(-h): Shows this message."
         echo -e "\t--clean(-c): Removes ./build/ directory."
-        echo -e "\t--test(-t) [Module]: Run simulation for module mk[Module]Test defined in testbench/[Module]Test.bsv";;
-        # echo -e "\t--verilog(-v) [Module]: Compile mk[Module] defined in ./src/[Module].bsv into Verilog, results are saved to ./build/verilog/"
+        echo -e "\t--test(-t) [Module]: Run simulation for module mk[Module]Test defined in testbench/[Module]Test.bsv"
+        echo -e "\t--verilog(-v) [Module]: Compile mk[Module] defined in ./src/[Module].bsv into Verilog, results are saved to ./build/verilog/";;
 esac
